@@ -5,4 +5,5 @@ export interface IGameEvents {
     boardY: number;
   };
   "unit:picked": { unitId: number };
+  "unit:spawned": { unitId: number; cellId: number };
 }

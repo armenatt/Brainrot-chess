@@ -10,6 +10,7 @@ import manifest from "./assets/manifest";
 import { EventBus } from "./core/EventBus";
 import { UnitHealthHUDSystem } from "./core/systems/UnitHealthHUDSystem";
 import TungTungSahur from "./core/characters/TungTungSahur";
+import BonecaAmbalabu from "./core/characters/BonecaAmbalabu";
 
 // Sandbox
 // World initiation to be refactored into a separate entity/class
@@ -22,13 +23,14 @@ const camera = new THREE.PerspectiveCamera(
   1000
 );
 
-camera.position.set(0, 15, 10);
+camera.position.set(7, 30, 35);
 camera.rotateX(THREE.MathUtils.degToRad(-45));
 const FIXED_DT = 1 / 60;
 let lastNow = performance.now();
 let accumulator = 0;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
+const events = new EventBus();
 
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.querySelector("#app")?.appendChild(renderer.domElement);
@@ -40,24 +42,8 @@ const manager = new AssetManager();
 await manager.preload(manifest);
 
 const chessboard = createChessboard(world, { x: -9, y: 1, z: -15 });
-const draggableUnit = world.spawnUnit(
-  TungTungSahur,
-  world.chessboards.get(chessboard)!.extras[0].entityId,
-  chessboard,
-  manager.geometry(TungTungSahur.model),
-  manager.material(TungTungSahur.model)
-);
-const draggableUnit2 = world.spawnUnit(
-  TungTungSahur,
-  world.chessboards.get(chessboard)!.extras[1].entityId,
-  chessboard,
-  manager.geometry(TungTungSahur.model),
-  new THREE.MeshStandardMaterial({ color: "green" })
-);
 
-console.log(chessboard);
-
-spawnEntityWithMesh(
+const plane = spawnEntityWithMesh(
   world,
   new THREE.PlaneGeometry(100, 100),
   new THREE.MeshStandardMaterial({
@@ -67,8 +53,6 @@ spawnEntityWithMesh(
   { x: 0, y: 0, z: 0 },
   { x: -90, y: 0, z: 0 }
 );
-
-const events = new EventBus();
 
 const renderSync = new RenderSyncSystem(scene, world);
 const draggable = new DraggableSystem(
@@ -81,19 +65,65 @@ const draggable = new DraggableSystem(
 const chessboardSystem = new ChessboardSystem(
   world,
   world.chessboards.get(chessboard)!,
-  events
+  events,
+  manager
 );
 
 const unitHealthHUDSystem = new UnitHealthHUDSystem(world);
 
 const dirLight = new THREE.DirectionalLight(0xffffff, 2);
-dirLight.position.set(0, 15, -15);
+// dirLight.position.set(0, 15, -15);
+
+const al = new THREE.AmbientLight("white");
 scene.add(dirLight);
+scene.add(al);
+// ------------------------ sandbox
+const freeExtraCells: number[] = [];
+
+for (const cell of world.chessboards.get(chessboard)!.extras) {
+  if (!world.chessboards.get(chessboard)?.placements.get(cell.entityId)) {
+    freeExtraCells.push(cell.entityId);
+  }
+}
+
+// ------------------------
+
+function spawnSahur() {
+  const draggableUnit = world.spawnUnit(
+    BonecaAmbalabu,
+    freeExtraCells[0],
+    1,
+    chessboard,
+    manager
+  );
+
+  events.emit("unit:spawned", {
+    unitId: draggableUnit,
+    cellId: freeExtraCells[0],
+  });
+  freeExtraCells.shift();
+
+  return draggableUnit;
+}
+
+const draggableUnit = world.spawnUnit(
+  TungTungSahur,
+  freeExtraCells[0],
+  1,
+  chessboard,
+  manager
+);
+
+events.emit("unit:spawned", {
+  unitId: draggableUnit,
+  cellId: freeExtraCells[0],
+});
 
 window.addEventListener("keydown", (event) => {
   if (event.key === "d") {
-    world.units.get(draggableUnit)!.health -= 1;
-    console.log(world.units.get(draggableUnit));
+    const id = spawnSahur();
+    world.units.get(id)!.health -= 1;
+    console.log(world.chessboards.get(chessboard)?.placements);
   }
 });
 

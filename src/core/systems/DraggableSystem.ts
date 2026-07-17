@@ -1,4 +1,11 @@
-import { Plane, Raycaster, Vector2, Vector3, type Camera } from "three";
+import {
+  Object3D,
+  Plane,
+  Raycaster,
+  Vector2,
+  Vector3,
+  type Camera,
+} from "three";
 import type { World } from "../World";
 import type { EventBus } from "../EventBus";
 
@@ -71,29 +78,41 @@ export class DraggableSystem {
     this.updatePointer(event);
     this.raycaster.setFromCamera(this.mouseCurrent, this.camera);
 
-    const entries = [...this.world.draggables.keys()]
-      .map((id) => ({ id, mesh: this.world.meshes.get(id) }))
-      .filter(
-        (e): e is { id: number; mesh: NonNullable<typeof e.mesh> } => !!e.mesh
-      );
+    const draggableMeshes = [...this.world.draggables.keys()].flatMap((id) => {
+      const obj = this.world.meshes.get(id);
+      return obj ? [obj] : [];
+    });
 
-    const hits = this.raycaster.intersectObjects(entries.map((e) => e.mesh));
+    const hits = this.raycaster.intersectObjects(draggableMeshes);
     if (!hits[0]) return;
 
-    const hit = entries.find((e) => e.mesh === hits[0].object);
+    if (!hits[0]) return;
 
-    if (!hit) return;
-    this.dragging = hit.id;
+    const entityId = this.findEntityFromHit(hits[0].object);
+    if (entityId === null || !this.world.draggables.has(entityId)) return;
 
-    const t = this.world.transforms.get(hit.id)!;
+    this.dragging = entityId;
+
+    const t = this.world.transforms.get(entityId)!;
     this.boardY = t.y;
     t.y += LIFT_HEIGHT;
     this.dragPlane.constant = -(this.boardY + LIFT_HEIGHT);
 
     const hoveredCell = this.pickCell();
     this.hoveredCell = hoveredCell;
-    this.events.emit("unit:picked", { unitId: hit.id });
+    this.events.emit("unit:picked", { unitId: entityId });
   };
+
+  private findEntityFromHit(object: Object3D): number | null {
+    let current: Object3D | null = object;
+    while (current) {
+      for (const [id, mesh] of this.world.meshes) {
+        if (mesh === current) return id;
+      }
+      current = current.parent;
+    }
+    return null;
+  }
 
   pickCell() {
     const t = this.world.transforms.get(this.dragging!);

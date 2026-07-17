@@ -18,6 +18,6 @@ export class Unit {
     this.damage = character.baseDamage * level * LEVEL_BONUS_COEFF;
     this.criticalHitChance =
       character.criticalHitChance * level * LEVEL_BONUS_COEFF;
-    this.criticalHit = character.criticalHitChance * level * LEVEL_BONUS_COEFF;
+    this.criticalHit = character.criticalHitCoef * level * LEVEL_BONUS_COEFF;
   }
 }

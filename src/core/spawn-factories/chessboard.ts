@@ -11,7 +11,7 @@ export function createChessboard(
 
   const ROWS_COUNT = 10;
   const COLS_COUNT = 10;
-  const CELL_SIZE = 2;
+  const CELL_SIZE = 4;
 
   const EXTRAS_COUNT = 6;
 
@@ -30,8 +30,8 @@ export function createChessboard(
 
   const extras = buildChessboard(world, 1, EXTRAS_COUNT, CELL_SIZE, {
     ...position,
-    x: min.x + 4,
-    z: chessboardMax.z + 4,
+    x: min.x + CELL_SIZE * 2,
+    z: chessboardMax.z + CELL_SIZE * 2,
   })[0];
 
   const extrasMax = world.transforms.get(extras[extras.length - 1].entityId)!;
@@ -39,6 +39,7 @@ export function createChessboard(
   const max = new THREE.Vector3(chessboardMax.x, chessboardMax.y, extrasMax.z);
 
   world.chessboards.set(chessboardId, {
+    entityId: chessboardId,
     cols: ROWS_COUNT,
     rows: COLS_COUNT,
     grid: cells,
@@ -63,9 +64,10 @@ function buildChessboard(
   for (let row = 0; row < rowsCount; row++) {
     const cols: Cell[] = [];
     for (let col = 0; col < colsCount; col++) {
+      const cellPlane = new THREE.PlaneGeometry(cellSize, cellSize);
       const newCellId = spawnEntityWithMesh(
         world,
-        new THREE.PlaneGeometry(cellSize, cellSize),
+        cellPlane,
         new THREE.MeshStandardMaterial({
           color: (col + row) % 2 == 0 ? 0x000000 : 0xffffff,
           roughness: 0.4,

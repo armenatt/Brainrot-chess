@@ -8,6 +8,7 @@ export type Cell = {
 
 export class Chessboard {
   constructor(
+    public entityId: number,
     public min: Vector3,
     public max: Vector3,
     public rows: number,

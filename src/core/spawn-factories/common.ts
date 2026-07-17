@@ -17,12 +17,33 @@ export function spawnEntityWithMesh(
   const t = new Transform(position.x, position.y, position.z);
   const r = new Rotation(rotation.x, rotation.y, rotation.z);
 
-  const mesh = new THREE.Mesh(geometry, material);
+  const mesh = new THREE.Mesh(geometry.clone(), material);
 
   mesh.position.set(t.x, t.y, t.z);
   world.rotations.set(entityId, r);
   world.transforms.set(entityId, t);
   world.meshes.set(entityId, mesh);
+
+  return entityId;
+}
+
+export function spawnEntityWithModel(
+  world: World,
+  model: THREE.Object3D,
+  position = { x: 0, y: 0, z: 0 },
+  rotation = { x: 0, y: 0, z: 0 }
+) {
+  const entityId = world.createEntity();
+
+  world.pendingSpawns.push(entityId);
+
+  const t = new Transform(position.x, position.y, position.z);
+  const r = new Rotation(rotation.x, rotation.y, rotation.z);
+
+  model.position.set(t.x, t.y, t.z);
+  world.rotations.set(entityId, r);
+  world.transforms.set(entityId, t);
+  world.meshes.set(entityId, model);
 
   return entityId;
 }

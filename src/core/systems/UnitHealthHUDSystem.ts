@@ -1,4 +1,4 @@
-import { Mesh, MeshBasicMaterial, PlaneGeometry } from "three";
+import { Box3, Mesh, MeshBasicMaterial, PlaneGeometry } from "three";
 import type { World } from "../World";
 
 export class UnitHealthHUDSystem {
@@ -10,14 +10,16 @@ export class UnitHealthHUDSystem {
 
   initHealthbars() {
     for (const [unitId, { maxHealth, health }] of this.world.units) {
-      const unitM = this.world.meshes.get(unitId);
+      const unitM = this.world.meshes.get(unitId)!;
 
       if (health < maxHealth) {
         const hpMesh = this.createNewHealthBar();
         this.healthBars.set(unitId, hpMesh);
-        unitM?.geometry.computeBoundingBox();
-        hpMesh.position.y = unitM!.geometry.boundingBox!.max.y;
+        const box = new Box3().setFromObject(unitM);
+
+        hpMesh.position.y = box.max.y + 2;
         hpMesh.scale.x = health / maxHealth;
+
         unitM?.add(hpMesh);
       }
     }
@@ -48,7 +50,7 @@ export class UnitHealthHUDSystem {
 
   createNewHealthBar() {
     return new Mesh(
-      new PlaneGeometry(2, 0.3),
+      new PlaneGeometry(5, 1),
       new MeshBasicMaterial({ color: "green" })
     );
   }
